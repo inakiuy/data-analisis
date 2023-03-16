@@ -1,3 +1,5 @@
+--- ME OLVIDE DEL TITULO
+
 --- Q: ¿Como se ve la tabla?
 --- A: Obtener los  primeros 100 registros para tener una vista general de la tabla
 SELECT *
