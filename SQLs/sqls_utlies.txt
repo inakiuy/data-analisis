@@ -1,1 +1,115 @@
-Hola mundo
+--- Q: ¿Como se ve la tabla?
+--- A: Obtener los  primeros 100 registros para tener una vista general de la tabla
+SELECT *
+FROM trips
+LIMIT 100;
+
+--- Q: ¿Cuales son los nombres de las estaciones de partida contenidas en este dataset?
+--- A: Obtener todos los start_station_name sin repetidos
+SELECT DISTINCT start_station_name
+FROM trips;
+
+--- Q: Se ve feo, ¿Puedes ordenarlas descendente?
+--- Obtener todos los start_station_name sin repetidos ordenados descendente
+SELECT DISTINCT start_station_name
+FROM trips
+ORDER BY start_station_name DESC;
+
+--- Q: Al verlos odenados descendentes observe que hay nulos, ¿Podrías decirme cuantos hay?
+--- A: Contar la cantidad de registros que tengan start_station_name nulo
+SELECT count(*) as cantidad_nulos
+FROM trips
+WHERE start_station_name is NULL;
+
+--- Q: ¿Y que pasa con la estaciones de llegada?
+--- Q: ¿Cuales son los nombres de las estaciones de llegada contenidas en este dataset?
+--- Q: Ya muestramelos ordenados descendente
+--- A: Obtener todos los end_station_name sin repetidos ordenados descendente
+SELECT DISTINCT end_station_name
+FROM trips
+ORDER BY end_station_name DESC;
+
+--- Q: ¿Y entonces, cuales son las estaciones contenidas en este dataset?
+--- A: Obtener la union de las estaciones de partida y llegada sin duplicados
+(
+	SELECT DISTINCT start_station_name as station
+	FROM trips
+) UNION (
+	SELECT DISTINCT end_station_name as station
+	FROM trips
+)
+ORDER BY station DESC;
+
+--- Q: 824 no son tantas, podemos observer el resultado ¿Como se ve?
+--- A: Parecia que todas tenian el mismo formato de CALLE & CALLE pero hay registros que son PLAZA (ej. Warren Park West).
+
+--- Q: ¿Que porcentaje representan los nulos en la estacion de partida?
+--- A: Obtener para cada estación, (cant de ocurrencias/total de filas del dataset)*100
+SELECT
+	DATOS.start_station_name,
+	DATOS.cant_rows,
+	(DATOS.cant_rows/DATOS.total::float)*100 as porcentaje
+FROM
+	(
+		( --- Start sub-query A
+			SELECT start_station_name, count(*) as cant_rows 
+			FROM trips
+			GROUP BY start_station_name
+		  --- End sub-query A
+		) as STATIONS
+	CROSS JOIN
+		( --- Start sub-query B
+			SELECT count(*) as total FROM trips
+		  --- End sub-query B
+		) as TOTAL
+	) AS DATOS
+ORDER BY porcentaje DESC
+
+--- Q:
+--- A:
+WITH
+var_w_null as (SELECT * FROM table_columns_missing),
+total_records as (SELECT count(*) as total FROM trips)
+SELECT var_w_null.variable, var_w_null.count, ROUND((var_w_null.count/total_records.total::float * 100), 2) as percentage
+FROM var_w_null, total_records
+ORDER BY percentage DESC
+
+--- Q:
+--- A:
+WITH
+var_w_null as (SELECT * FROM table_columns_missing),
+total_records as (SELECT count(*) as total FROM trips)
+SELECT var_w_null.variable, var_w_null.count, ROUND((var_w_null.count/total_records.total::numeric * 100), 4) as percentage
+FROM var_w_null, total_records
+ORDER BY percentage DESC;
+
+--- Q: Cuantos viajes comenzaron a las 00:00:00?
+--- A: Obtener todos los viajes que comenzaron a esa hora utilizando la funcion EXTRACT
+SELECT *
+FROM trips
+WHERE EXTRACT(HOUR FROM started_at) = 0
+	  AND EXTRACT(MINUTE FROM started_at) = 0
+	  AND EXTRACT(SECOND FROM started_at) = 0
+
+--- Q: Cuantos viajes finalizaron a las 00:00:00?
+--- A: Obtener todos los viajes que finalizaron a esa hora utilizando la funcion EXTRACT
+SELECT *
+FROM trips
+WHERE EXTRACT(HOUR FROM ended_at) = 0
+	  AND EXTRACT(MINUTE FROM ended_at) = 0
+	  AND EXTRACT(SECOND FROM ended_at) = 0
+	  
+--- Q: Quiero obtener la duracion de todos los viajes en segundos. los quiero agrupados por duracion
+--- A:
+SELECT (ended_at - started_at) as duration, count(1) as cantidad
+FROM trips
+GROUP BY duration
+ORDER BY duration DESC
+
+--- Q: Quiero obtener todos los viajes con duración mayor a 1 minuto y menor a 60 minutos. Los quiero agrupados por duracion descendente
+--- A:
+SELECT (ended_at - started_at) as duration, count(1) as cantidad
+FROM trips
+WHERE (extract(epoch from ended_at - started_at) / 60) > 1 AND (extract(epoch from ended_at - started_at) / 60) < 60
+GROUP BY duration
+ORDER BY duration DESC
